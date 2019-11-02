@@ -26,8 +26,11 @@ func main() {
 				fmt.Fprintf(os.Stderr, "dup2: %v\n", err)
 				continue
 			}
-			countLines(f, counts)
+			hasDup := countLines(f, counts)
 			f.Close()
+			if hasDup {
+				fmt.Printf("'%s' has duplicated line(s).\n", arg)
+			}
 		}
 	}
 	for line, n := range counts {
@@ -37,12 +40,23 @@ func main() {
 	}
 }
 
-func countLines(f *os.File, counts map[string]int) {
+func countLines(f *os.File, counts map[string]int) bool {
 	input := bufio.NewScanner(f)
+	curCnts := make(map[string]int)
+	hasDup := false
 	for input.Scan() {
-		counts[input.Text()]++
+		text := input.Text()
+		counts[text]++
+		if !hasDup {
+			if curCnts[text] > 0 {
+				hasDup = true
+			} else {
+				curCnts[text]++
+			}
+		}
 	}
 	// NOTE: ignoring potential errors from input.Err()
+	return hasDup
 }
 
 //!-
