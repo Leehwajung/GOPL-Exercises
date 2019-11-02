@@ -10,14 +10,15 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func main() {
 	fmt.Println(os.Args[0])
 	s, sep := "", ""
-	for _, arg := range os.Args[1:] {
-		s += sep + arg
-		sep = " "
+	for i, arg := range os.Args[1:] {
+		s += sep + strconv.FormatInt(int64(i + 1), 16) + ": " + arg
+		sep = "\n"
 	}
 	fmt.Println(s)
 }

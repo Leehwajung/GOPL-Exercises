@@ -10,12 +10,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"strconv"
 )
 
 //!+
 func main() {
+	args := make([]string, len(os.Args) - 1)
+	for i, arg := range os.Args[1:] {
+		args[i] = strconv.FormatInt(int64(i + 1), 16) + ": " + arg
+	}
 	fmt.Println(os.Args[0])
-	fmt.Println(strings.Join(os.Args[1:], " "))
+	fmt.Println(strings.Join(args, "\n"))
 }
 
 //!-
