@@ -27,6 +27,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "fetch: %v\n", err)
 			os.Exit(1)
 		}
+		fmt.Printf("[HTTP status code: %s]\n\n", resp.Status)
 		io.Copy(os.Stdout, resp.Body)
 		resp.Body.Close()
 		if err != nil {
