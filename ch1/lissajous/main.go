@@ -13,6 +13,7 @@ import (
 	"image/color"
 	"image/gif"
 	"io"
+	"strconv"
 	"math"
 	"math/rand"
 	"os"
@@ -27,6 +28,22 @@ import (
 )
 
 //!+main
+
+type LissajousParams struct {
+	Cycles  int     // number of complete x oscillator revolutions
+	Res     float64 // angular resolution
+	Size    int     // image canvas covers [-size..+size]
+	Nframes int     // number of animation frames
+	Delay   int     // delay between frames in 10ms units
+}
+
+var defaultLissajousParams = LissajousParams {
+	Cycles  : 5,
+	Res     : 0.001,
+	Size    : 100,
+	Nframes : 64,
+	Delay   : 8,
+}
 
 var palette = []color.Color{
 	color.White,
@@ -46,7 +63,24 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "web" {
 		//!+http
 		handler := func(w http.ResponseWriter, r *http.Request) {
-			lissajous(w)
+			query := r.URL.Query()
+			params := defaultLissajousParams
+			if query["cycles"] != nil {
+				params.Cycles, _ = strconv.Atoi(query.Get("cycles"))
+			}
+			if query["res"] != nil {
+				params.Res, _ = strconv.ParseFloat(query.Get("res"), 64)
+			}
+			if query["size"] != nil {
+				params.Size, _ = strconv.Atoi(query.Get("size"))
+			}
+			if query["nframes"] != nil {
+				params.Nframes, _ = strconv.Atoi(query.Get("nframes"))
+			}
+			if query["delay"] != nil {
+				params.Delay, _ = strconv.Atoi(query.Get("delay"))
+			}
+			lissajous(w, params)
 		}
 		http.HandleFunc("/", handler)
 		//!-http
@@ -54,16 +88,17 @@ func main() {
 		return
 	}
 	//!+main
-	lissajous(os.Stdout)
+	lissajous(os.Stdout, defaultLissajousParams)
 }
 
-func lissajous(out io.Writer) {
-	const (
-		cycles  = 5     // number of complete x oscillator revolutions
-		res     = 0.001 // angular resolution
-		size    = 100   // image canvas covers [-size..+size]
-		nframes = 64    // number of animation frames
-		delay   = 8     // delay between frames in 10ms units
+func lissajous(out io.Writer, params LissajousParams) {
+	var (
+		cycles  = float64(params.Cycles)
+		res     = params.Res
+		size    = params.Size
+		sizef   = float64(params.Size)
+		nframes = params.Nframes
+		delay   = params.Delay
 	)
 	freq := rand.Float64() * 3.0 // relative frequency of y oscillator
 	anim := gif.GIF{LoopCount: nframes}
@@ -74,7 +109,7 @@ func lissajous(out io.Writer) {
 		for t := 0.0; t < cycles*2*math.Pi; t += res {
 			x := math.Sin(t)
 			y := math.Sin(t*freq + phase)
-			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5),
+			img.SetColorIndex(size+int(x*sizef+0.5), size+int(y*sizef+0.5),
 				uint8(i % len(palette)))
 		}
 		phase += 0.1
