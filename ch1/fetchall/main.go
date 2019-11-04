@@ -9,23 +9,37 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"io"
 	"io/ioutil"
+	"bufio"
 	"net/http"
 	"os"
 	"time"
 )
 
 func main() {
+	execSplit := strings.Split(os.Args[0], string(os.PathSeparator))
+	execName := execSplit[len(execSplit) - 1]
+	output := "output_" + execName + "_" + time.Now().Format("060102150405")
+	fo, err := os.OpenFile(output, os.O_RDWR|os.O_CREATE, 0750)
+	if err != nil {
+		panic(err)
+	}
+	defer fo.Close()
+	w := bufio.NewWriter(fo)
+
 	start := time.Now()
 	ch := make(chan string)
 	for _, url := range os.Args[1:] {
 		go fetch(url, ch) // start a goroutine
 	}
 	for range os.Args[1:] {
-		fmt.Println(<-ch) // receive from channel ch
+		fmt.Fprintln(w, <-ch) // receive from channel ch
 	}
-	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
+	fmt.Fprintf(w, "%.2fs elapsed\n", time.Since(start).Seconds())
+
+	w.Flush()
 }
 
 func fetch(url string, ch chan<- string) {
